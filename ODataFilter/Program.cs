@@ -22,7 +22,7 @@ namespace ODataFilter
 
         static List<String> GroupExpr(string expr)
         {
-            List<String> expressions = new ArrayList<String>();
+            List<String> expressions = new List<String>();
 
             int index = expr.IndexOf("$filter=");
             expr = expr.Substring(index + 8);
