@@ -25,6 +25,14 @@ namespace ODataFilter
             {
                 Filter = new string[] { expr };
             }
+
+            for (int i = 0; i < Filter.Length; i++)
+            {
+                if (Filter[i][0].Equals('('))
+                {
+                    Filter[i] = Filter[i].Substring(1, Filter[i].Length - 2);
+                }
+            }
         }
     }
 }

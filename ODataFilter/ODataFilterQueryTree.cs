@@ -13,6 +13,10 @@ namespace ODataFilter
 
         public void SetQueryTree(string expr)
         {
+            int index = expr.IndexOf("$filter=");
+            expr = expr.Substring(index + 8);
+
+            expr = CheckExpr(expr);
             List<String> expressions = GroupExpr(expr);
             ODataFilterQueryTree tree = new ODataFilterQueryTree();
 
@@ -54,9 +58,6 @@ namespace ODataFilter
         {
             List<String> expressions = new List<String>();
 
-            int index = expr.IndexOf("$filter=");
-            expr = expr.Substring(index + 8);
-
             while (expr.Length != 0)
             {
                 if (expr[0].Equals(' '))
@@ -68,7 +69,30 @@ namespace ODataFilter
                 }
 
                 int firstIndex = expr.IndexOf('(');
-                int secondIndex = expr.IndexOf(')');
+                int secondIndex;
+
+                string newExpr = expr;
+                int countBrackets = 0;
+                int indexOfChar = firstIndex + 1;
+                
+                while(true)
+                {
+                    if(newExpr[indexOfChar].Equals('('))
+                    {
+                        countBrackets++;
+                    }
+                    else if (newExpr[indexOfChar].Equals(')') && countBrackets > 0)
+                    {
+                        countBrackets--;
+                    }
+                    else if (newExpr[indexOfChar].Equals(')') && countBrackets == 0)
+                    {
+                        secondIndex = indexOfChar;
+                        break;
+                    }
+
+                    indexOfChar++;
+                }
 
                 if (firstIndex == 0)
                 {
@@ -83,6 +107,52 @@ namespace ODataFilter
             }
 
             return expressions;
+        }
+
+        public string CheckExpr(string expr)
+        {
+            expr = expr.Trim();
+            int index = 0;
+            int countBrackets = 0;
+
+            while(index != expr.Length)
+            {
+                if(expr[index].Equals('('))
+                {
+                    countBrackets++;
+                }
+                else if (expr[index].Equals(')'))
+                {
+                    countBrackets--;
+                }
+
+                if (index != (expr.Length - 1) && expr[index].Equals(')')
+                    && !expr[index + 1].Equals(' ') && !expr[index + 1].Equals(')'))
+                {
+                    expr = expr.Substring(0, index + 1) + " " + expr.Substring(index + 1);
+                }
+                else if (index != 0 && expr[index].Equals('(') && !expr[index - 1].Equals(' ') &&
+                    !expr[index - 1].Equals('(') &&
+                    (expr.Substring(index - 4, 4).Equals(" and") || expr.Substring(index - 3, 3).Equals(" or")))
+                {
+                    expr = expr.Substring(0, index) + " " + expr.Substring(index);
+                }
+
+                if(index != 0 && expr[index].Equals(' ') && expr[index - 1].Equals(' '))
+                {
+                    expr = expr.Substring(0, index - 1) + expr.Substring(index);
+                    index--;
+                }
+
+                index++;
+            }
+
+            if (countBrackets != 0)
+            {
+                throw new Exception("Количество открывающих и закрывающих скобок не совпадает");
+            }
+
+            return expr;
         }
     }
 }
