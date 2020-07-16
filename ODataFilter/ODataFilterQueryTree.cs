@@ -114,10 +114,20 @@ namespace ODataFilter
             expr = expr.Trim();
             int index = 0;
             int countBrackets = 0;
+            int doubleBrackets = 0;
 
             while(index != expr.Length)
             {
-                if(expr[index].Equals('('))
+                if (expr[index].Equals(')') && countBrackets == 0)
+                {
+                    throw new Exception("Нет пары для закрывающей скобки");
+                }
+                else if(expr[index].Equals('(') && index == expr.Length - 1)
+                {
+                    throw new Exception("Выражение не может оканчиваться на открывающею скобку");
+                }
+
+                if (expr[index].Equals('('))
                 {
                     countBrackets++;
                 }
@@ -126,6 +136,27 @@ namespace ODataFilter
                     countBrackets--;
                 }
 
+                //проверка на двойные скобки
+                if(expr[index].Equals('(') && expr[index + 1].Equals('('))
+                {
+                    doubleBrackets = index + 1;
+                }
+                else if(index != expr.Length - 1 && expr[index].Equals(')') 
+                    && expr[index + 1].Equals(')') && doubleBrackets != 0)
+                {
+                    expr = expr.Substring(0, doubleBrackets) +
+                        expr.Substring(doubleBrackets + 1, index - doubleBrackets) + 
+                        expr.Substring(index + 2);
+                    doubleBrackets = 0;
+                    countBrackets--;
+                }
+                else if(index != expr.Length - 1 && expr[index].Equals(')')
+                    && !expr[index + 1].Equals(')') && doubleBrackets != 0)
+                {
+                    doubleBrackets = 0;
+                }
+
+                //проверка на наличие пробелов перед и после скобок
                 if (index != (expr.Length - 1) && expr[index].Equals(')')
                     && !expr[index + 1].Equals(' ') && !expr[index + 1].Equals(')'))
                 {
@@ -133,11 +164,14 @@ namespace ODataFilter
                 }
                 else if (index != 0 && expr[index].Equals('(') && !expr[index - 1].Equals(' ') &&
                     !expr[index - 1].Equals('(') &&
-                    (expr.Substring(index - 4, 4).Equals(" and") || expr.Substring(index - 3, 3).Equals(" or")))
+                    (expr.Substring(index - 4, 4).Equals(" and") 
+                    || expr.Substring(index - 3, 3).Equals(" or")))
                 {
                     expr = expr.Substring(0, index) + " " + expr.Substring(index);
+                    index++;
                 }
 
+                //проверка на наличие лишних пробелов
                 if(index != 0 && expr[index].Equals(' ') && expr[index - 1].Equals(' '))
                 {
                     expr = expr.Substring(0, index - 1) + expr.Substring(index);
@@ -149,7 +183,7 @@ namespace ODataFilter
 
             if (countBrackets != 0)
             {
-                throw new Exception("Количество открывающих и закрывающих скобок не совпадает");
+                throw new Exception("Нет пары для открывающей скобки");
             }
 
             return expr;
